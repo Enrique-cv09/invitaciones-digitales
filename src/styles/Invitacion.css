@@ -1,0 +1,448 @@
+/* 🎭 Fuentes Premium - Mobile First */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600&family=Playfair+Display:ital,wght=0,400;0,500;1,400&display=swap');
+
+
+/* 📱 RESETEO GLOBAL */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body, html {
+  overflow-x: hidden;
+  width: 100%;
+  background: #f4edf7; /* Lavanda suave global desde la raíz */
+  -webkit-text-size-adjust: 100%;
+}
+
+/* 🌌 Animaciones Platinadas y Sutiles */
+@keyframes destelloPlata {
+  0% { transform: translateX(-150%) skewX(-25deg); opacity: 0; }
+  15% { opacity: 0.3; }
+  35% { transform: translateX(150%) skewX(-25deg); opacity: 0; }
+  100% { transform: translateX(150%) skewX(-25deg); opacity: 0; }
+}
+
+@keyframes flotarMariposaLento {
+  0% { transform: translateY(110vh) translateX(0px) rotate(0deg); opacity: 0; }
+  8% { opacity: 0.4; }
+  50% { transform: translateY(50vh) translateX(20px) rotate(10deg); }
+  92% { opacity: 0.4; }
+  100% { transform: translateY(-10vh) translateX(-10px) rotate(-10deg); opacity: 0; }
+}
+
+@keyframes mariposaClick {
+  0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1.2) translateY(-60px) rotate(10deg); opacity: 0; }
+}
+
+/* 🌸 Contenedor Principal */
+.invitacion-container {
+  background: #f4edf7; /* Mantiene el contraste hermoso de fondo */
+  min-height: 100vh;
+  font-family: 'Montserrat', sans-serif;
+  color: #4a4a4a;
+  padding-bottom: 80px;
+  overflow-x: hidden;
+  position: relative;
+  width: 100%;
+}
+
+/* 🦋 Mariposas de Fondo */
+.mariposa-fondo {
+  position: fixed;
+  color: #d1c4e9;
+  font-size: 20px;
+  pointer-events: none;
+  z-index: 1;
+  animation: flotarMariposaLento 25s infinite linear;
+}
+
+.mariposa-click {
+  position: absolute;
+  font-size: 26px;
+  pointer-events: none;
+  z-index: 9999;
+  animation: mariposaClick 0.9s forwards ease-out;
+  user-select: none;
+}
+
+/* 🏆 Tarjetas Blancas Premium */
+.tarjeta-gala {
+  position: relative;
+  overflow: hidden;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(148, 87, 223, 0.199);
+  border: 1px solid #e3d3e6;
+  width: 100%;
+}
+
+.tarjeta-gala::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(230, 230, 235, 0.5), transparent);
+  animation: destelloPlata 5s infinite ease-in-out;
+  pointer-events: none;
+}
+
+/* 🌸 Header de la Invitación (Reducido el padding inferior de 45px a 20px) */
+.header-invitacion {
+  background: linear-gradient(180deg, #ebdcf0 0%, #f4edf7 100%);
+  padding: 65px 24px 20px 24px; /* Ajustamos para acercarlo a la foto */
+  text-align: center;
+}
+
+/* 👑 El Nombre de Ximena (Reducido el margen superior de 28px a 12px) */
+.titulo-gala {
+  font-size: 58px; /* Un pelín más compacto para móviles */
+  margin: 30px 0 30px 0; /* 👈 Ajuste fino: Solo 12px arriba para agruparlo con el subtítulo, y 16px abajo */
+  color: #3b1b54;
+  font-weight: 300;
+  font-family: 'Playfair Display', Georgia, serif;
+  letter-spacing: 0.5px;
+}
+
+
+/* Los conectores morados ahora serán cursivas más estilizadas */
+.texto-cursiva {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 23px;
+  color: #7b1fa2;
+  display: block;
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+}
+
+/* Nueva clase para los nombres: ahora elegantes en Serif como pediste */
+.nombre-gala {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 18px;
+  font-weight: 500;
+  color: #2c2c2e;
+  letter-spacing: 0.3px;
+  line-height: 1.6;
+}
+
+.subtitulo-caps {
+  letter-spacing: 3px;
+  font-size: 11px;
+  color: #8e8e93;
+  text-transform: uppercase;
+  display: block;
+  font-weight: 500;
+}
+/* ⏳ Cuenta Regresiva Platino */
+.contador-box {
+  display: flex;
+  justify-content: space-around;
+  background: #fff;
+  padding: 15px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(148, 87, 223, 0.199);
+  border: 1px solid #f1ebf2;
+}
+
+.contador-box b {
+  font-size: 26px;
+  color: #4a148c;
+  font-weight: 300;
+  font-family: 'Playfair Display', serif;
+}
+
+/* 📸 Slider de Fotos */
+.slider-fotos {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 12px; /* Un poquito más de espacio abajo por la nueva altura */
+  -webkit-overflow-scrolling: touch;
+}
+
+.slider-fotos::-webkit-scrollbar { display: none; }
+
+.slider-fotos div {
+  flex: 0 0 80%; /* 👈 Bajamos a 80% para que se vea más alargado y estilizado a lo alto */
+  scroll-snap-align: center;
+  height: 350px; /* 👈 ¡Duplicamos el alto! De 230px a 460px para el look vertical premium */
+  border-radius: 16px; /* Bordes un pelín más curvos para que acompañe el tamaño */
+  overflow: hidden;
+  border: 1px solid #e3d3e6;
+  box-shadow: 0 8px 24px rgba(74, 20, 140, 0.05); /* Le sumamos una微sombra para que flote con clase */
+}
+
+.slider-fotos img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center; /* Centrado perfecto */
+}
+
+/* 🎟️ Botón de Pases */
+.btn-oscuro {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  background: #5c2575;
+  color: #fff;
+  border-radius: 8px;
+  border: 1px solid #5a5061;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 🗺️ Botones de Mapas e Interacciones */
+.btn-mapa-iglesia {
+  display: block;
+  padding: 11px;
+  background: #5c2575;
+  color: #fff;
+  border: 1px solid #b39dbf;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  transition: background 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-mapa-salon {
+  display: block;
+  padding: 12px;
+  background: #5c2575;
+  color: #fff;
+  border-radius: 6px;
+  border: none;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 3px 8px rgba(92, 37, 117, 0.15);
+  transition: background 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 🌊 Animación de entrada de tarjetas */
+.revelar-scroll {
+  opacity: 0;
+  transform: translateY(20px) scale(0.98);
+  transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+  will-change: opacity, transform;
+}
+
+.revelar-scroll.visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* 🎟️ ESTILOS ESPECÍFICOS PARA EL PASE DIGITAL (GALA EDITION) */
+
+.pase-container {
+  background: #f4edf7; /* Fondo lavanda consistente */
+  min-height: 100vh;
+  padding: 40px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* El cuerpo del pase con estilo de tarjeta premium */
+.pase-card {
+  background: #ffffff;
+  border-radius: 20px;
+  border: 1px solid #e3d3e6;
+  box-shadow: 0 15px 35px rgba(74, 20, 140, 0.08);
+  width: 100%;
+  max-width: 350px;
+  padding: 30px 20px;
+  text-align: center;
+  position: relative;
+}
+
+/* Indicador de mesa con color lila satinado */
+.mesa-badge {
+  background: #f3e5f5;
+  color: #7b1fa2;
+  padding: 10px 15px;
+  border-radius: 12px;
+  display: inline-block;
+  margin: 15px 0;
+  border: 1px dashed #b39dbf;
+}
+
+.mesa-badge strong {
+  font-family: 'Playfair Display', serif;
+  font-size: 18px;
+}
+
+/* Contenedor del QR con borde platinado */
+.qr-wrapper {
+  background: #fff;
+  padding: 15px;
+  border-radius: 15px;
+  border: 1px solid #eae1eb;
+  display: inline-block;
+  margin: 20px 0;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.02);
+}
+
+/* Sección de Asientos Reservados con look de lujo */
+.asientos-box {
+  background: linear-gradient(135deg, #fdfbfe 0%, #f3e5f5 100%);
+  border: 1px solid #e1bee7;
+  border-radius: 12px;
+  padding: 15px;
+  margin: 20px 0;
+}
+
+.asientos-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #8e8e93;
+  display: block;
+  margin-bottom: 5px;
+}
+
+.asientos-numero {
+  font-family: 'Playfair Display', serif;
+  font-size: 24px;
+  color: #4a148c;
+  font-weight: 500;
+}
+
+/* 💀 SHIMMER EFFECT / SKELETON LOADING */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  padding: 20px 0;
+  width: 100%;
+}
+
+.skeleton-block {
+  background: linear-gradient(90deg, #f0f0f5 25%, #e6e6f0 50%, #f0f0f5 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+  border-radius: 8px;
+  width: 100%;
+}
+
+/* 🍞 TOAST NOTIFICATION (FLOTANTE PREMIUM) */
+@keyframes barraProgreso {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+.toast-gala {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #3b1b54; /* El morado oscuro de tu branding */
+  color: #ffffff;
+  padding: 14px 20px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(74, 20, 140, 0.25);
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  min-width: 280px;
+  max-width: 90%;
+  text-align: center;
+  border: 1px solid #5c2575;
+  transition: all 0.3s ease;
+}
+
+.toast-gala::before {
+  content: '✨';
+  font-size: 16px;
+  margin-bottom: 2px;
+}
+
+.toast-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: #b39dbf; /* Línea platinada de progreso */
+  animation: barraProgreso 3s linear forwards;
+}
+
+/* 💥 ANIMACIÓN PARA EL EASTER EGG DE LA EXPLOSIÓN */
+@keyframes dispersionBomba {
+  0% {
+    transform: translate(0, 0) scale(0.2) rotate(0deg);
+    opacity: 1;
+  }
+  15% {
+    transform: translate(0, 0) scale(1.3);
+    opacity: 1;
+  }
+  100% {
+    /* Usa las variables dinámicas de dirección que inyectamos en React */
+    transform: 
+      translate(
+        calc(cos(var(--angulo-disparo)) * var(--distancia-disparo)), 
+        calc(sin(var(--angulo-disparo)) * var(--distancia-disparo))
+      ) 
+      scale(0.4) 
+      rotate(360deg);
+    opacity: 0;
+  }
+}
+
+.mariposa-bomba {
+  animation: dispersionBomba 1.2s forwards ease-out !important;
+}
+
+/* 🌀 LOADER DE GALA INTERMEDIO */
+.loader-gala-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: #f4edf7; /* Fondo lavanda global */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 99999; /* Por encima de absolutamente todo */
+  font-family: 'Montserrat', sans-serif;
+}
+
+.spinner-gala {
+  width: 45px;
+  height: 45px;
+  border: 3px solid #ebdcf0;
+  border-top: 3px solid #7b1fa2; /* Tu morado de gala */
+  border-radius: 50%;
+  animation: girarSpinner 0.8s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes girarSpinner {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

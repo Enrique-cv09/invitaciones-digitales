@@ -1,0 +1,50 @@
+[
+  {
+    "id": "0lnqa",
+    "familia": "Familia Pérez Mendoza",
+    "pasesTotales": 4,
+    "confirmado": false,
+    "mesa": "Mesa 1",
+    "ingresado": false
+  },
+  {
+    "id": "nh6ft",
+    "familia": "Tío Juan y Tía Clara",
+    "pasesTotales": 4,
+    "confirmado": false,
+    "mesa": "Mesa 2",
+    "ingresado": false
+  },
+  {
+    "id": "p3wqv",
+    "familia": "Primo Carlos y Novia",
+    "pasesTotales": 4,
+    "confirmado": false,
+    "mesa": "Mesa 3",
+    "ingresado": false
+  },
+  {
+    "id": "ziaq3",
+    "familia": "Familia Gómez Aranda",
+    "pasesTotales": 2,
+    "confirmado": false,
+    "mesa": "Mesa 4",
+    "ingresado": false
+  },
+  {
+    "id": "6qf71",
+    "familia": "Amigas de la Escuela",
+    "pasesTotales": 4,
+    "confirmado": false,
+    "mesa": "Mesa 5",
+    "ingresado": false
+  },
+  {
+    "id": "xe8hl",
+    "familia": "Familia Rodríguez Beltrán",
+    "pasesTotales": 4,
+    "confirmado": false,
+    "mesa": "Mesa 6",
+    "ingresado": false
+  }
+]
