@@ -143,8 +143,65 @@ export default function App() {
     });
   };
 
-  if (loading) return <div style={{ padding: '20px', fontFamily: 'sans-serif', textAlign: 'center' }}>Conectando con Supabase...</div>;
-  if (error) return <div style={{ padding: '20px', color: 'red', fontFamily: 'sans-serif', textAlign: 'center' }}>⚠️ Código inválido o error de conexión.</div>;
+  if (loading) {
+  return (
+    <div style={{ 
+      display: 'flex', 
+      flexDirection: 'column',
+      justifyContent: 'center', 
+      alignItems: 'center', 
+      minHeight: '100vh', 
+      backgroundColor: '#fdfbfe',
+      fontFamily: "'Montserrat', sans-serif"
+    }}>
+      <div className="spinner-gala" style={{ marginBottom: '15px' }} />
+      <span style={{ 
+        fontFamily: "'Cormorant Garamond', serif", 
+        fontStyle: 'italic', 
+        fontSize: '18px', 
+        color: '#6d6d72' 
+      }}>
+        Preparando tu invitación...
+      </span>
+    </div>
+  );
+}
+if (error) {
+  return (
+    <div style={{ 
+      display: 'flex', 
+      flexDirection: 'column',
+      justifyContent: 'center', 
+      alignItems: 'center', 
+      minHeight: '100vh', 
+      backgroundColor: '#fdfbfe',
+      padding: '24px',
+      textAlign: 'center'
+    }}>
+      <span style={{ fontSize: '40px', marginBottom: '10px' }}>👀</span>
+      <h2 style={{ 
+        fontFamily: "'Playfair Display', serif", 
+        color: '#3b1b54', 
+        fontSize: '24px', 
+        fontWeight: '400',
+        margin: '0 0 10px 0' 
+      }}>
+        Acceso Denegado
+      </h2>
+      <p style={{ 
+        fontFamily: "'Cormorant Garamond', serif", 
+        fontStyle: 'italic', 
+        fontSize: '18px', 
+        color: '#6d6d72',
+        maxWidth: '320px',
+        lineHeight: '1.5',
+        margin: 0
+      }}>
+        "Este pase digital es exclusivo. Te cachamos intentando mirar de más... por favor, usa el enlace original de tu invitación."
+      </p>
+    </div>
+  );
+}
 
   // 🚪 RENDER 1: VISTA DE LA HOSTESS (Check-in con cámara integrada en tiempo real)
   if (esStaff) {
@@ -242,6 +299,7 @@ export default function App() {
 
     <p style={{ fontSize: '12px', color: '#6d6d72', margin: '0 0 25px 0', lineHeight: '1.6', fontFamily: "'Montserrat', sans-serif" }}>
       Presenta este código QR en la entrada del salón. Te sugerimos tomar una captura de pantalla para un acceso rápido.
+      <br /> Recuerda que este pase es personal e intransferible. ¡Nos vemos en la celebración!
     </p>
 
     {/* 🔥 AQUÍ ESTÁ EL CAMBIO PRINCIPAL: Añadido 'data-html2canvas-ignore' */}
