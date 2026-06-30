@@ -54,7 +54,7 @@ export default function Hostess({ onRegistrarIngreso }: HostessProps) {
     }
   }, [toastMensaje]);
 
-  // 📷 Lógica del Escáner QR (Solo se monta si hay una sesión activa de Staff)
+  // 📷 Lógica del Escáner QR
   useEffect(() => {
     if (!modoEscaneo || !sesion) return;
 
@@ -72,7 +72,7 @@ export default function Hostess({ onRegistrarIngreso }: HostessProps) {
     const alEscanearExito = async (textoDecodificado: string) => {
       try {
         scanner.clear();
-        setLoadingBusqueda(true); // 👈 Dispara el Shimmer Skeleton Loading
+        setLoadingBusqueda(true);
         setModoEscaneo(false);
 
         const urlProcesada = new URL(textoDecodificado);
@@ -80,7 +80,6 @@ export default function Hostess({ onRegistrarIngreso }: HostessProps) {
 
         if (!idFamilia) {
           setToastMensaje("❌ Código QR no válido");
-          // 🔄 Reset de seguridad para revivir la cámara de inmediato
           setFamiliaActual(null);
           setIntegrantesActuales([]);
           setModoEscaneo(true);
@@ -88,18 +87,17 @@ export default function Hostess({ onRegistrarIngreso }: HostessProps) {
           return;
         }
 
-        // 1. Consultamos la familia
         const { data: dataFamilia } = await supabase
           .from("familias")
           .select("*")
           .eq("id", idFamilia)
           .maybeSingle();
 
-        // 2. Consultamos los integrantes usando el campo plano familia_id
+        // 🟢 CORRECCIÓN QUIRÚRGICA: Regresamos a "familia_id" que es el campo real en tu DB
         const { data: dataIntegrantes } = await supabase
           .from("integrantes")
           .select("*")
-          .eq("family_id", idFamilia) // Nota: Cambia a familia_id si renombraste el campo en la DB
+          .eq("familia_id", idFamilia)
           .order("id", { ascending: true });
 
         if (dataFamilia) {
@@ -124,7 +122,6 @@ export default function Hostess({ onRegistrarIngreso }: HostessProps) {
           setIntegrantesActuales(dataIntegrantes || []);
         } else {
           setToastMensaje("❌ No se encontró el registro");
-          // 🔄 Si modificaron el ID a lo chismoso, limpia el estado y vuelve a encender la cámara
           setFamiliaActual(null);
           setIntegrantesActuales([]);
           setModoEscaneo(true);
@@ -132,7 +129,6 @@ export default function Hostess({ onRegistrarIngreso }: HostessProps) {
       } catch (err) {
         console.error(err);
         setToastMensaje("❌ Error al leer el código");
-        // 🔄 Si truena el parse de la URL, resetea para que la hostess no se quede congelada
         setFamiliaActual(null);
         setIntegrantesActuales([]);
         setModoEscaneo(true);
@@ -150,7 +146,6 @@ export default function Hostess({ onRegistrarIngreso }: HostessProps) {
     };
   }, [modoEscaneo, sesion]);
 
-  // 🔑 Manejo del formulario de Login de Supabase Auth
   const manejarLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorAuth(null);
@@ -205,7 +200,6 @@ export default function Hostess({ onRegistrarIngreso }: HostessProps) {
     (i) => i.confirmado_individual,
   );
 
-  // 🌀 Splash de carga intermedio para la validación del backend
   if (loadingAuth) {
     return (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", backgroundColor: "#fdfbfe" }}>
@@ -263,23 +257,8 @@ export default function Hostess({ onRegistrarIngreso }: HostessProps) {
 
   // ================= RENDER B: PANEL AUTORIZADO DE LA HOSTESS =================
   return (
-    <div
-      className="invitacion-container"
-      style={{ minHeight: "100vh", padding: "40px 20px" }}
-    >
-      {/* 🚀 BOTÓN DE CIERRE DE SESIÓN SEGURO */}
-      <button 
-        onClick={cerrarSesion} 
-        style={{
-          position: "absolute", top: "15px", right: "15px",
-          background: "rgba(207, 102, 121, 0.1)", border: "1px solid #cf6679", color: "#cf6679", 
-          borderRadius: "20px", padding: "6px 14px", cursor: "pointer", fontSize: "11px", fontWeight: "600",
-          fontFamily: "'Montserrat', sans-serif", textTransform: "uppercase"
-        }}
-      >
-        🚪 Salir
-      </button>
-
+    <div className="invitacion-container" style={{ minHeight: "100vh", padding: "40px 20px" }}>
+      
       {/* 🍞 RENDER DEL TOAST NOTIFICATION PREMIUM */}
       {toastMensaje && (
         <div className="toast-gala">
@@ -288,44 +267,22 @@ export default function Hostess({ onRegistrarIngreso }: HostessProps) {
         </div>
       )}
 
-      <div
-        className="tarjeta-gala"
-        style={{ maxWidth: "420px", margin: "0 auto", padding: "30px 20px" }}
-      >
+      <div className="tarjeta-gala" style={{ maxWidth: "420px", margin: "0 auto", padding: "30px 20px" }}>
+        
         {/* ================= PANTALLA A: MODO ESCANEO ================= */}
         {modoEscaneo && (
           <div style={{ textAlign: "center" }}>
             <span className="subtitulo-caps">Acceso en Puerta</span>
-            <h2
-              className="titulo-gala"
-              style={{ fontSize: "32px", margin: "10px 0 20px 0" }}
-            >
+            <h2 className="titulo-gala" style={{ fontSize: "32px", margin: "10px 0 20px 0" }}>
               Escáner QR
             </h2>
 
-            <div
-              id="lector-qr-container"
-              style={{
-                borderRadius: "16px",
-                overflow: "hidden",
-                border: "1px solid #e3d3e6",
-              }}
-            ></div>
+            <div id="lector-qr-container" style={{ borderRadius: "16px", overflow: "hidden", border: "1px solid #e3d3e6" }}></div>
 
-            <p
-              style={{
-                fontSize: "12px",
-                color: "#8e8e93",
-                marginTop: "20px",
-                fontFamily: "'Montserrat', sans-serif",
-                lineHeight: "1.5",
-              }}
-            >
-              Coloca el código QR del pase digital frente a la cámara para
-              cargar la lista de gala de forma inmediata.
+            <p style={{ fontSize: "12px", color: "#8e8e93", marginTop: "20px", fontFamily: "'Montserrat', sans-serif", lineHeight: "1.5" }}>
+              Coloca el código QR del pase digital frente a la cámara para cargar la lista de gala de forma inmediata.
             </p>
 
-            {/* 📷 BOTÓN DE REINICIO DE CÁMARA MANUAL (EVITA CONGELAMIENTOS EN MÓVILES) */}
             <button
               onClick={() => {
                 setModoEscaneo(false);
@@ -334,10 +291,22 @@ export default function Hostess({ onRegistrarIngreso }: HostessProps) {
               style={{
                 marginTop: "15px", background: "none", border: "none", color: "#7b1fa2",
                 fontSize: "12px", fontWeight: "600", textDecoration: "underline", cursor: "pointer",
-                fontFamily: "'Montserrat', sans-serif"
+                fontFamily: "'Montserrat', sans-serif", display: "block", width: "100%"
               }}
             >
               📷 ¿La cámara no lee? Reestablecer escáner
+            </button>
+
+            {/* 🚪 NUEVA UBICACIÓN DE SALIR (MANTENIENDO LA SIMETRÍA) */}
+            <button 
+              onClick={cerrarSesion} 
+              style={{
+                marginTop: "30px", background: "none", border: "1px solid #eae1eb", color: "#8e8e93", 
+                borderRadius: "8px", padding: "10px", cursor: "pointer", fontSize: "12px", fontWeight: "500",
+                fontFamily: "'Montserrat', sans-serif", width: "100%"
+              }}
+            >
+              🚪 Cerrar Sesión de Staff
             </button>
           </div>
         )}
@@ -361,16 +330,10 @@ export default function Hostess({ onRegistrarIngreso }: HostessProps) {
               <span className="subtitulo-caps" style={{ fontSize: "11px" }}>
                 Pase Detectado con Éxito
               </span>
-              <h2
-                className="titulo-gala"
-                style={{ fontSize: "32px", margin: "10px 0 5px 0" }}
-              >
+              <h2 className="titulo-gala" style={{ fontSize: "32px", margin: "10px 0 5px 0" }}>
                 Recepción
               </h2>
-              <p
-                className="nombre-gala"
-                style={{ fontSize: "18px", color: "#4a148c" }}
-              >
+              <p className="nombre-gala" style={{ fontSize: "18px", color: "#4a148c" }}>
                 Familia {familiaActual.nombre_familia}
               </p>
               <div style={{ width: "50px", height: "1px", background: "#eae1eb", margin: "15px auto 0 auto" }}></div>
@@ -426,7 +389,7 @@ export default function Hostess({ onRegistrarIngreso }: HostessProps) {
                           style={{ 
                             marginRight: "12px", 
                             transform: "scale(1.2)", 
-                            accentColor: "#2e7d32" // 🟢 ¡Cambiado a verde de alta visibilidad!
+                            accentColor: "#2e7d32" // 🟢 Verde nítido
                           }}
                         />
                         <div>
@@ -468,6 +431,18 @@ export default function Hostess({ onRegistrarIngreso }: HostessProps) {
                 style={{ marginTop: "12px", width: "100%", textAlign: "center", display: "block" }}
               >
                 📷 Siguiente Invitado (Escanear otro)
+              </button>
+
+              {/* 🚪 CERRAR SESIÓN TAMBIÉN DISPONIBLE DESDE LA VISTA DE LA FAMILIA */}
+              <button 
+                onClick={cerrarSesion} 
+                style={{
+                  marginTop: "20px", background: "none", border: "none", color: "#8e8e93", 
+                  fontSize: "11px", fontWeight: "500", fontFamily: "'Montserrat', sans-serif", 
+                  width: "100%", textAlign: "center", textDecoration: "underline", cursor: "pointer"
+                }}
+              >
+                Cerrar Sesión de Staff
               </button>
             </div>
           </div>
