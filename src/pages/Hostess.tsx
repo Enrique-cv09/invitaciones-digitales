@@ -15,18 +15,36 @@ interface HostessProps {
 }
 
 export default function Hostess({ onRegistrarIngreso }: HostessProps) {
+  // 🔐 ESTADOS DE AUTENTICACIÓN (SUPABASE AUTH)
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [sesion, setSesion] = useState<any>(null);
+  const [loadingAuth, setLoadingAuth] = useState(true);
+  const [errorAuth, setErrorAuth] = useState<string | null>(null);
+
+  // 🎟️ ESTADOS DEL COMPONENTE ORIGINAL
   const [familiaActual, setFamiliaActual] = useState<any>(null);
-  const [integrantesActuales, setIntegrantesActuales] = useState<Integrante[]>(
-    [],
-  );
+  const [integrantesActuales, setIntegrantesActuales] = useState<Integrante[]>([]);
   const [modoEscaneo, setModoEscaneo] = useState(true);
   const [seleccionados, setSeleccionados] = useState<number[]>([]);
   const [loadingBusqueda, setLoadingBusqueda] = useState(false);
-
-  // 🍞 Estado para la notificación flotante
   const [toastMensaje, setToastMensaje] = useState<string | null>(null);
 
-  // Efecto para desvanecer el Toast automáticamente después de 3 segundos
+  // 🔄 1. Escuchar la sesión real en el servidor de Supabase
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSesion(session);
+      setLoadingAuth(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSesion(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // 🍞 Efecto para desvanecer el Toast automáticamente después de 3 segundos
   useEffect(() => {
     if (toastMensaje) {
       const timer = setTimeout(() => {
@@ -36,9 +54,9 @@ export default function Hostess({ onRegistrarIngreso }: HostessProps) {
     }
   }, [toastMensaje]);
 
-  // 📷 Lógica del Escáner QR
+  // 📷 Lógica del Escáner QR (Solo se monta si hay una sesión activa de Staff)
   useEffect(() => {
-    if (!modoEscaneo) return;
+    if (!modoEscaneo || !sesion) return;
 
     const scanner = new Html5QrcodeScanner(
       "lector-qr-container",
@@ -54,7 +72,7 @@ export default function Hostess({ onRegistrarIngreso }: HostessProps) {
     const alEscanearExito = async (textoDecodificado: string) => {
       try {
         scanner.clear();
-        setLoadingBusqueda(true); // 👈 Aquí se dispara el Skeleton Loading
+        setLoadingBusqueda(true); // 👈 Dispara el Shimmer Skeleton Loading
         setModoEscaneo(false);
 
         const urlProcesada = new URL(textoDecodificado);
@@ -62,27 +80,29 @@ export default function Hostess({ onRegistrarIngreso }: HostessProps) {
 
         if (!idFamilia) {
           setToastMensaje("❌ Código QR no válido");
+          // 🔄 Reset de seguridad para revivir la cámara de inmediato
+          setFamiliaActual(null);
+          setIntegrantesActuales([]);
           setModoEscaneo(true);
           setLoadingBusqueda(false);
           return;
         }
 
-        // 1. Consultamos la familia y traemos los datos planos
+        // 1. Consultamos la familia
         const { data: dataFamilia } = await supabase
           .from("familias")
           .select("*")
           .eq("id", idFamilia)
           .maybeSingle();
 
-        // 2. CORRECCIÓN DEL FILTRO: Usamos "familia_id" que es el campo real en la DB
+        // 2. Consultamos los integrantes usando el campo plano familia_id
         const { data: dataIntegrantes } = await supabase
           .from("integrantes")
           .select("*")
-          .eq("familia_id", idFamilia) // 👈 ¡Arreglado aquí!
+          .eq("family_id", idFamilia) // Nota: Cambia a familia_id si renombraste el campo en la DB
           .order("id", { ascending: true });
 
         if (dataFamilia) {
-          // Opcional: Si necesitas el nombre de la mesa, hacemos un fetch rápido para no errar con el join
           let nombreMesaFinal = "Sin Asignar";
           if (dataFamilia.mesa_id) {
             const { data: dataMesa } = await supabase
@@ -96,7 +116,6 @@ export default function Hostess({ onRegistrarIngreso }: HostessProps) {
             }
           }
 
-          // Estructuramos el objeto idéntico a como lo espera tu vista
           setFamiliaActual({
             ...dataFamilia,
             mesas: { nombre_mesa: nombreMesaFinal },
@@ -105,11 +124,17 @@ export default function Hostess({ onRegistrarIngreso }: HostessProps) {
           setIntegrantesActuales(dataIntegrantes || []);
         } else {
           setToastMensaje("❌ No se encontró el registro");
+          // 🔄 Si modificaron el ID a lo chismoso, limpia el estado y vuelve a encender la cámara
+          setFamiliaActual(null);
+          setIntegrantesActuales([]);
           setModoEscaneo(true);
         }
       } catch (err) {
         console.error(err);
         setToastMensaje("❌ Error al leer el código");
+        // 🔄 Si truena el parse de la URL, resetea para que la hostess no se quede congelada
+        setFamiliaActual(null);
+        setIntegrantesActuales([]);
         setModoEscaneo(true);
       } finally {
         setLoadingBusqueda(false);
@@ -123,7 +148,31 @@ export default function Hostess({ onRegistrarIngreso }: HostessProps) {
         .clear()
         .catch((error) => console.error("Error limpiando scanner", error));
     };
-  }, [modoEscaneo]);
+  }, [modoEscaneo, sesion]);
+
+  // 🔑 Manejo del formulario de Login de Supabase Auth
+  const manejarLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorAuth(null);
+    setLoadingBusqueda(true);
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      setErrorAuth("⚠️ Credenciales incorrectas para el Staff.");
+    }
+    setLoadingBusqueda(false);
+  };
+
+  const cerrarSesion = async () => {
+    await supabase.auth.signOut();
+    setFamiliaActual(null);
+    setIntegrantesActuales([]);
+    setModoEscaneo(true);
+  };
 
   const manejarCheckbox = (id: number) => {
     setSeleccionados((prev) =>
@@ -146,7 +195,6 @@ export default function Hostess({ onRegistrarIngreso }: HostessProps) {
       ),
     );
 
-    // 🍞 DETONAR TOAST PREMIUM EN LUGAR DE UN ALERT FEO
     setToastMensaje(
       `¡Acceso Concedido! Bienvenidos Familia ${familiaActual?.nombre_familia}`,
     );
@@ -157,12 +205,82 @@ export default function Hostess({ onRegistrarIngreso }: HostessProps) {
     (i) => i.confirmado_individual,
   );
 
+  // 🌀 Splash de carga intermedio para la validación del backend
+  if (loadingAuth) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", backgroundColor: "#fdfbfe" }}>
+        <div className="spinner-gala" />
+      </div>
+    );
+  }
+
+  // ================= 🛡️ RENDER A: BARRERA DE SEGURIDAD (LOGIN FORM) =================
+  if (!sesion) {
+    return (
+      <div className="invitacion-container" style={{ minHeight: "100vh", display: "flex", justifyContent: "center", alignItems: "center", padding: "20px" }}>
+        <div className="tarjeta-gala" style={{ maxWidth: "360px", width: "100%", padding: "35px 24px", textAlign: "center" }}>
+          <span style={{ fontSize: "36px", marginBottom: "10px", display: "block" }}>🔐</span>
+          <h2 className="titulo-gala" style={{ fontSize: "26px", margin: "0 0 10px 0" }}>Acceso Staff</h2>
+          <p style={{ fontSize: "12px", color: "#6d6d72", marginBottom: "25px", fontFamily: "'Montserrat', sans-serif", lineHeight: "1.5" }}>
+            Sección exclusiva para la Hostess del salón. Por favor introduce las credenciales oficiales.
+          </p>
+
+          <form onSubmit={manejarLogin} style={{ textAlign: "left" }}>
+            <div style={{ marginBottom: "15px" }}>
+              <label style={{ fontSize: "11px", textTransform: "uppercase", color: "#3b1b54", fontWeight: "600", fontFamily: "'Montserrat', sans-serif" }}>Correo Electrónico</label>
+              <input 
+                type="email" 
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid #e1bee7", marginTop: "5px", boxSizing: "border-box" }}
+                placeholder="hostess@salongoldrain.com"
+              />
+            </div>
+
+            <div style={{ marginBottom: "20px" }}>
+              <label style={{ fontSize: "11px", textTransform: "uppercase", color: "#3b1b54", fontWeight: "600", fontFamily: "'Montserrat', sans-serif" }}>Contraseña</label>
+              <input 
+                type="password" 
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid #e1bee7", marginTop: "5px", boxSizing: "border-box" }}
+                placeholder="••••••••"
+              />
+            </div>
+
+            {errorAuth && <p style={{ color: "#cf6679", fontSize: "12px", marginBottom: "15px", textAlign: "center" }}>{errorAuth}</p>}
+
+            <button type="submit" className="btn-oscuro" style={{ width: "100%", padding: "12px" }}>
+              🔓 Iniciar Sesión
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // ================= RENDER B: PANEL AUTORIZADO DE LA HOSTESS =================
   return (
     <div
       className="invitacion-container"
       style={{ minHeight: "100vh", padding: "40px 20px" }}
     >
-      {/* 🍞 RENDER DEL TOAST NOTIFICATION */}
+      {/* 🚀 BOTÓN DE CIERRE DE SESIÓN SEGURO */}
+      <button 
+        onClick={cerrarSesion} 
+        style={{
+          position: "absolute", top: "15px", right: "15px",
+          background: "rgba(207, 102, 121, 0.1)", border: "1px solid #cf6679", color: "#cf6679", 
+          borderRadius: "20px", padding: "6px 14px", cursor: "pointer", fontSize: "11px", fontWeight: "600",
+          fontFamily: "'Montserrat', sans-serif", textTransform: "uppercase"
+        }}
+      >
+        🚪 Salir
+      </button>
+
+      {/* 🍞 RENDER DEL TOAST NOTIFICATION PREMIUM */}
       {toastMensaje && (
         <div className="toast-gala">
           {toastMensaje}
@@ -206,53 +324,33 @@ export default function Hostess({ onRegistrarIngreso }: HostessProps) {
               Coloca el código QR del pase digital frente a la cámara para
               cargar la lista de gala de forma inmediata.
             </p>
+
+            {/* 📷 BOTÓN DE REINICIO DE CÁMARA MANUAL (EVITA CONGELAMIENTOS EN MÓVILES) */}
+            <button
+              onClick={() => {
+                setModoEscaneo(false);
+                setTimeout(() => setModoEscaneo(true), 300);
+              }}
+              style={{
+                marginTop: "15px", background: "none", border: "none", color: "#7b1fa2",
+                fontSize: "12px", fontWeight: "600", textDecoration: "underline", cursor: "pointer",
+                fontFamily: "'Montserrat', sans-serif"
+              }}
+            >
+              📷 ¿La cámara no lee? Reestablecer escáner
+            </button>
           </div>
         )}
 
         {/* ================= 💀 RENDER DEL SKELETON LOADING (SHIMMER) ================= */}
         {loadingBusqueda && (
           <div className="skeleton-container">
-            {/* Esqueleto del Header */}
-            <div
-              className="skeleton-block"
-              style={{ height: "14px", width: "40%", margin: "0 auto" }}
-            ></div>
-            <div
-              className="skeleton-block"
-              style={{ height: "35px", width: "60%", margin: "10px auto" }}
-            ></div>
-            <div
-              className="skeleton-block"
-              style={{
-                height: "20px",
-                width: "50%",
-                margin: "0 auto 15px auto",
-              }}
-            ></div>
-
-            {/* Esqueleto de la caja de la mesa */}
-            <div
-              className="skeleton-block"
-              style={{
-                height: "70px",
-                borderRadius: "12px",
-                marginBottom: "20px",
-              }}
-            ></div>
-
-            {/* Esqueleto de los renglones de la lista */}
-            <div
-              className="skeleton-block"
-              style={{ height: "45px", borderRadius: "12px" }}
-            ></div>
-            <div
-              className="skeleton-block"
-              style={{ height: "45px", borderRadius: "12px" }}
-            ></div>
-            <div
-              className="skeleton-block"
-              style={{ height: "45px", borderRadius: "12px" }}
-            ></div>
+            <div className="skeleton-block" style={{ height: "14px", width: "40%", margin: "0 auto" }}></div>
+            <div className="skeleton-block" style={{ height: "35px", width: "60%", margin: "10px auto" }}></div>
+            <div className="skeleton-block" style={{ height: "20px", width: "50%", margin: "0 auto 15px auto" }}></div>
+            <div className="skeleton-block" style={{ height: "70px", borderRadius: "12px", marginBottom: "20px" }}></div>
+            <div className="skeleton-block" style={{ height: "45px", borderRadius: "12px" }}></div>
+            <div className="skeleton-block" style={{ height: "45px", borderRadius: "12px" }}></div>
           </div>
         )}
 
@@ -275,73 +373,30 @@ export default function Hostess({ onRegistrarIngreso }: HostessProps) {
               >
                 Familia {familiaActual.nombre_familia}
               </p>
-              <div
-                style={{
-                  width: "50px",
-                  height: "1px",
-                  background: "#eae1eb",
-                  margin: "15px auto 0 auto",
-                }}
-              ></div>
+              <div style={{ width: "50px", height: "1px", background: "#eae1eb", margin: "15px auto 0 auto" }}></div>
             </div>
 
             <div
               style={{
                 background: "linear-gradient(135deg, #fdfbfe 0%, #f3e5f5 100%)",
-                border: "1px solid #e1bee7",
-                padding: "15px",
-                borderRadius: "12px",
-                textAlign: "center",
-                margin: "0 0 25px 0",
+                border: "1px solid #e1bee7", padding: "15px", borderRadius: "12px", textAlign: "center", margin: "0 0 25px 0",
               }}
             >
-              <span
-                style={{
-                  fontSize: "10px",
-                  textTransform: "uppercase",
-                  display: "block",
-                  letterSpacing: "1px",
-                  color: "#8e8e93",
-                  fontWeight: "600",
-                }}
-              >
+              <span style={{ fontSize: "10px", textTransform: "uppercase", display: "block", letterSpacing: "1px", color: "#8e8e93", fontWeight: "600" }}>
                 Ubicación del Banquete
               </span>
-              <h1
-                style={{
-                  margin: "5px 0 0 0",
-                  fontFamily: "'Playfair Display', serif",
-                  color: "#4a148c",
-                  fontSize: "28px",
-                  fontWeight: "500",
-                }}
-              >
+              <h1 style={{ margin: "5px 0 0 0", fontFamily: "'Playfair Display', serif", color: "#4a148c", fontSize: "28px", fontWeight: "500" }}>
                 {familiaActual.mesas?.nombre_mesa || "Sin Asignar"}
               </h1>
             </div>
 
             <div style={{ textAlign: "left" }}>
-              <h3
-                className="texto-cursiva"
-                style={{
-                  fontSize: "18px",
-                  marginBottom: "15px",
-                  color: "#3a3a3a",
-                  display: "block",
-                }}
-              >
+              <h3 className="texto-cursiva" style={{ fontSize: "18px", marginBottom: "15px", color: "#3a3a3a", display: "block" }}>
                 Confirmados para ingreso:
               </h3>
 
               {confirmados.length === 0 ? (
-                <p
-                  style={{
-                    textAlign: "center",
-                    color: "#8e8e93",
-                    fontSize: "14px",
-                    margin: "20px 0",
-                  }}
-                >
+                <p style={{ textAlign: "center", color: "#8e8e93", fontSize: "14px", margin: "20px 0" }}>
                   No hay miembros confirmados para esta familia.
                 </p>
               ) : (
@@ -351,56 +406,35 @@ export default function Hostess({ onRegistrarIngreso }: HostessProps) {
                     <div
                       key={persona.id}
                       style={{
-                        display: "flex",
-                        alignItems: "center",
-                        marginBottom: "12px",
-                        padding: "12px",
-                        background: yaIngreso ? "#f3e5f5" : "#ffffff",
-                        borderRadius: "12px",
-                        border: yaIngreso
-                          ? "1px dashed #b39dbf"
-                          : "1px solid #eae1eb",
+                        display: "flex", alignItems: "center", marginBottom: "12px", padding: "12px",
+                        background: yaIngreso ? "#f3e5f5" : "#ffffff", borderRadius: "12px",
+                        border: yaIngreso ? "1px dashed #b39dbf" : "1px solid #eae1eb",
                       }}
                     >
                       <label
                         style={{
-                          display: "flex",
-                          alignItems: "center",
-                          flexGrow: 1,
-                          cursor: yaIngreso ? "not-allowed" : "pointer",
-                          color: yaIngreso ? "#7b1fa2" : "#333",
-                          fontFamily: "'Montserrat', sans-serif",
-                          fontSize: "14px",
+                          display: "flex", alignItems: "center", flexGrow: 1,
+                          cursor: yaIngreso ? "not-allowed" : "pointer", color: yaIngreso ? "#7b1fa2" : "#333",
+                          fontFamily: "'Montserrat', sans-serif", fontSize: "14px",
                         }}
                       >
                         <input
                           type="checkbox"
                           disabled={yaIngreso}
-                          checked={
-                            yaIngreso || seleccionados.includes(persona.id)
-                          }
+                          checked={yaIngreso || seleccionados.includes(persona.id)}
                           onChange={() => manejarCheckbox(persona.id)}
-                          style={{
-                            marginRight: "12px",
-                            transform: "scale(1.2)",
-                            accentColor: "#7b1fa2",
+                          style={{ 
+                            marginRight: "12px", 
+                            transform: "scale(1.2)", 
+                            accentColor: "#2e7d32" // 🟢 ¡Cambiado a verde de alta visibilidad!
                           }}
                         />
                         <div>
-                          <strong
-                            style={{ fontWeight: yaIngreso ? "500" : "600" }}
-                          >
+                          <strong style={{ fontWeight: yaIngreso ? "500" : "600" }}>
                             {persona.nombre}
                           </strong>
                           {yaIngreso && (
-                            <div
-                              style={{
-                                fontSize: "11px",
-                                color: "#7b1fa2",
-                                marginTop: "2px",
-                                fontStyle: "italic",
-                              }}
-                            >
+                            <div style={{ fontSize: "11px", color: "#7b1fa2", marginTop: "2px", fontStyle: "italic" }}>
                               ✓ Acceso Correcto • {persona.hora_ingreso}
                             </div>
                           )}
@@ -416,15 +450,12 @@ export default function Hostess({ onRegistrarIngreso }: HostessProps) {
                 disabled={seleccionados.length === 0}
                 className="btn-oscuro"
                 style={{
-                  marginTop: "20px",
-                  width: "100%",
+                  marginTop: "20px", width: "100%",
                   opacity: seleccionados.length === 0 ? 0.4 : 1,
-                  cursor:
-                    seleccionados.length === 0 ? "not-allowed" : "pointer",
+                  cursor: seleccionados.length === 0 ? "not-allowed" : "pointer",
                 }}
               >
-                Registrar Entrada{" "}
-                {seleccionados.length > 0 && `(${seleccionados.length})`}
+                Registrar Entrada {seleccionados.length > 0 && `(${seleccionados.length})`}
               </button>
 
               <button
@@ -434,12 +465,7 @@ export default function Hostess({ onRegistrarIngreso }: HostessProps) {
                   setModoEscaneo(true);
                 }}
                 className="btn-mapa-iglesia"
-                style={{
-                  marginTop: "12px",
-                  width: "100%",
-                  textAlign: "center",
-                  display: "block",
-                }}
+                style={{ marginTop: "12px", width: "100%", textAlign: "center", display: "block" }}
               >
                 📷 Siguiente Invitado (Escanear otro)
               </button>
