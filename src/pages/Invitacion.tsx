@@ -9,6 +9,14 @@ import ximenaCholoEscaleras from "../assets/ximena_cholo_escaleras.webp";
 import ximenaVarandal from "../assets/ximena_varandal.webp";
 import ximenaCoche from "../assets/ximena_coche.webp";
 
+import ximenaJardinFull from "../assets/ximena_jardin_full.webp";
+import ximenaEspaldasFull from "../assets/ximen_espaldas_full.webp"; // O como apunte a tu carpeta assets
+import ximenaEspaldas2Full from "../assets/ximena_espaldas2_full.webp";
+import ximenaCholoFull from "../assets/ximena_cholo_full.webp";
+import ximenaCholoEscalerasFull from "../assets/ximena_cholo_escaleras_full.webp";
+import ximenaVarandalFull from "../assets/ximena_varandal_full.webp";
+import ximenaCocheFull from "../assets/ximena_coche_full.webp";
+
 interface Integrante {
   id: number;
   nombre: string;
@@ -67,51 +75,53 @@ function ScrollAnimate({ children }: { children: React.ReactNode }) {
   );
 }
 
-// 📸 🔥 COMPONENTE B: SUBCOMPONENTE DEL CARRUSEL AISLADO (Evita que parpadee el resto de la app)
-function CarruselAutonomo() {
+function CarruselAutonomo({
+  onAmpliarFoto,
+}: {
+  onAmpliarFoto: (url: string) => void;
+}) {
   const carruselRef = useRef<HTMLDivElement>(null);
   const [imagenesCargadas, setImagenesCargadas] = useState(false);
 
   const fotosOriginales = [
-    ximenaJardin,
-    ximenaEspaldas,
-    ximenaEspaldas2,
-    ximenaCholo,
-    ximenaCholoEscaleras,
-    ximenaVarandal,
-    ximenaCoche,
+    { thumb: ximenaJardin, full: ximenaJardinFull },
+    { thumb: ximenaEspaldas, full: ximenaEspaldasFull },
+    { thumb: ximenaEspaldas2, full: ximenaEspaldas2Full },
+    { thumb: ximenaCholo, full: ximenaCholoFull },
+    { thumb: ximenaCholoEscaleras, full: ximenaCholoEscalerasFull },
+    { thumb: ximenaVarandal, full: ximenaVarandalFull },
+    { thumb: ximenaCoche, full: ximenaCocheFull },
   ];
 
-  // 1. GENERAMOS EL CONTENIDO CLONADO PARA EL INFINITO
   const fotosCarrusel = [
     fotosOriginales[fotosOriginales.length - 1],
     ...fotosOriginales,
     fotosOriginales[0],
   ];
 
-  // 2. 🔥 EFECTO DE PRECARGA: Obliga al navegador a meter las fotos en caché ANTES de activar el movimiento
   useEffect(() => {
-    const promesas = fotosCarrusel.map((src) => {
+    const promesas = fotosCarrusel.map((foto) => {
       return new Promise((resolve) => {
         const img = new Image();
-        img.src = src;
+        img.src = foto.thumb;
         img.onload = resolve;
       });
     });
 
     Promise.all(promesas).then(() => {
-      setImagenesCargadas(true); // Solo arranca cuando TODO esté listo en la memoria del cel
+      setImagenesCargadas(true);
     });
   }, []);
 
-  // 3. LOGICA DE DESPLAZAMIENTO INFINITO OPTIMIZADA
   useEffect(() => {
-    if (!imagenesCargadas) return; // Espera el silbatazo de la precarga
+    if (!imagenesCargadas) return;
 
     const contenedor = carruselRef.current;
     if (!contenedor) return;
 
-    const anchoTarjeta = contenedor.offsetWidth * 0.85 + 12;
+    // Calculamos el ancho base real de cada tarjeta
+    const calcularAncho = () => contenedor.offsetWidth * 0.85 + 12;
+    let anchoTarjeta = calcularAncho();
     contenedor.scrollLeft = anchoTarjeta;
 
     const manejarScrollInfinito = () => {
@@ -128,18 +138,31 @@ function CarruselAutonomo() {
     contenedor.addEventListener("scroll", manejarScrollInfinito);
 
     const intervaloCarrusel = setInterval(() => {
-      // Forzamos comportamiento smooth solo en el trigger del movimiento
+      // Recalculamos dinámicamente en cada ciclo por si iOS alteró las dimensiones del viewport
+      anchoTarjeta = calcularAncho();
       contenedor.style.scrollBehavior = "smooth";
-      contenedor.scrollBy({ left: anchoTarjeta });
-    }, 4500); // Bajamos un poco a 4.5s para que la transición sea más dinámica
+
+      // Corregimos scrollBy usando opciones explícitas compatibles con Safari móvil
+      contenedor.scrollTo({
+        left: contenedor.scrollLeft + anchoTarjeta,
+        behavior: "smooth",
+      });
+    }, 4500);
+
+    // Ajuste responsivo ante rotación o redimensión en el iPhone
+    const manejarResize = () => {
+      anchoTarjeta = calcularAncho();
+      contenedor.scrollLeft = anchoTarjeta;
+    };
+    window.addEventListener("resize", manejarResize);
 
     return () => {
       contenedor.removeEventListener("scroll", manejarScrollInfinito);
+      window.removeEventListener("resize", manejarResize);
       clearInterval(intervaloCarrusel);
     };
   }, [imagenesCargadas]);
 
-  // Si no se han terminado de procesar en caché, mostramos un micro esqueleto elegante
   if (!imagenesCargadas) {
     return (
       <div
@@ -172,23 +195,43 @@ function CarruselAutonomo() {
       style={{
         opacity: imagenesCargadas ? 1 : 0,
         transition: "opacity 0.4s ease",
+        display: "flex", // Mantiene el flujo en línea horizontal
+        overflowX: "auto", // Habilita el scroll manual si quieren arrastrar
+        scrollSnapType: "x mandatory", // Hace que la foto se "imante" al centro al soltarla
+        WebkitOverflowScrolling: "touch", // Desplazamiento ultra suave en iOS/Safari
+        padding: "10px 0", // Micro espacio arriba y abajo para sombras si tienes
       }}
     >
       {fotosCarrusel.map((url, index) => (
-        <div key={index}>
+        <div
+          key={index}
+          style={{
+            minWidth: "80%", // 🟢 BAJAMOS A 80%: Esto hace que se asome un 15% - 20% de la siguiente foto
+            marginRight: "12px", // El espacio elegante de separación entre tarjetas
+            height: "380px",
+            flexShrink: 0, // 🛡️ Impide que iPhone comprima o deforme la caja
+            scrollSnapAlign: "center", // Centra la foto activa en la pantalla del celular
+          }}
+        >
           <img
-            src={url}
+            src={url.thumb}
             alt={`Book Ximena ${index}`}
-            loading="eager" /* 🔥 Fuerza al navegador a cargarla de golpe, ya no lazy */
-            decoding="sync" /* ⚡ Sincroniza la decodificación para evitar el renderizado a la mitad */
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            loading="eager"
+            decoding="sync"
+            onClick={() => onAmpliarFoto(url.full)}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              cursor: "zoom-in",
+              borderRadius: "12px", // Bordes redondeados de gala
+            }}
           />
         </div>
       ))}
     </div>
   );
 }
-
 // 👑 COMPONENTE PRINCIPAL
 export default function Invitacion({
   datos,
@@ -202,6 +245,7 @@ export default function Invitacion({
   });
   const [mariposas, setMariposas] = useState<MariposaInteractiva[]>([]);
   const [conteoClics, setConteoClics] = useState(0);
+  const [imagenMaximizada, setImagenMaximizada] = useState<string | null>(null);
 
   useEffect(() => {
     const laFecha = new Date("August 22, 2026 16:00:00").getTime();
@@ -315,7 +359,6 @@ export default function Invitacion({
         🦋
       </div>
 
-
       {/* 🌸 SECCIÓN 1: HEADER */}
       <div className="header-invitacion">
         <span className="subtitulo-caps">Te invito a celebrar mis XV Años</span>
@@ -356,7 +399,13 @@ export default function Invitacion({
             <img
               src={fotoPrincipal}
               alt="Ximena Gala"
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              onClick={() => setImagenMaximizada(fotoPrincipal)} // 👈 Agrega esto
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                cursor: "zoom-in",
+              }} // 👈 Asegúrate de que tenga el cursor
             />
           </div>
         </div>
@@ -431,7 +480,7 @@ export default function Invitacion({
         </ScrollAnimate>
       </div>
 
-      {/* 📸 🔥 SECCIÓN DEL CARRUSEL (Invocando al componente autónomo blindado) */}
+      {/* 📸 🔥 SECCIÓN DEL CARRUSEL (Búscalo abajo en tu render principal) */}
       <div
         style={{
           maxWidth: "360px",
@@ -440,7 +489,8 @@ export default function Invitacion({
         }}
       >
         <ScrollAnimate>
-          <CarruselAutonomo />
+          {/* 🟢 Pasamos la función controladora para revivir el zoom de las fotos */}
+          <CarruselAutonomo onAmpliarFoto={(url) => setImagenMaximizada(url)} />
         </ScrollAnimate>
       </div>
 
@@ -780,6 +830,68 @@ export default function Invitacion({
           </div>
         </ScrollAnimate>
       </div>
+
+      {imagenMaximizada && (
+        <div
+          onClick={() => setImagenMaximizada(null)}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            backgroundColor: "rgba(15, 8, 20, 0.95)",
+            zIndex: 99999,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
+            padding: "20px",
+            boxSizing: "border-box",
+          }}
+        >
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setImagenMaximizada(null);
+            }}
+            style={{
+              position: "absolute",
+              top: "20px",
+              right: "20px",
+              background: "rgba(255, 255, 255, 0.1)",
+              border: "1px solid rgba(255, 255, 255, 0.3)",
+              color: "#ffffff",
+              fontSize: "20px",
+              width: "40px",
+              height: "40px",
+              borderRadius: "50%",
+              cursor: "pointer",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              fontFamily: "sans-serif",
+              zIndex: 100000,
+            }}
+          >
+            ✕
+          </button>
+
+          <img
+            src={imagenMaximizada}
+            alt="Vista Ampliada"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: "100%",
+              maxHeight: "85vh",
+              borderRadius: "12px",
+              boxShadow: "0 10px 35px rgba(0, 0, 0, 0.6)",
+              objectFit: "contain",
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }

@@ -167,9 +167,8 @@ export default function Hostess({ onRegistrarIngreso }: HostessProps) {
   };
 
   const cerrarSesion = async () => {
-    // 🛡️ Alerta de confirmación para evitar dedazos accidentales
     const confirmar = window.confirm(
-      "¿Estás segura de que deseas cerrar sesión como Staff?",
+      "¿deseas cerrar sesión como Staff?",
     );
 
     if (confirmar) {
@@ -299,7 +298,7 @@ export default function Hostess({ onRegistrarIngreso }: HostessProps) {
                   marginTop: "5px",
                   boxSizing: "border-box",
                 }}
-                placeholder="hostess@salongoldrain.com"
+                placeholder="ejemplo@gmail.com"
               />
             </div>
 
